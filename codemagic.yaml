@@ -1,0 +1,40 @@
+# Codemagic workflow (REPO ROOT version): the app project is uploaded as a
+# single zip file (arc-raiders-guide-ios.zip). This workflow unzips it on a
+# cloud Mac, builds an UNSIGNED .ipa, and publishes it as a build artifact.
+# Sign/install the IPA on the iPhone with SideStore or AltStore (free Apple ID).
+workflows:
+  arc-raiders-guide-unsigned:
+    name: ARC Raiders Guide - Unsigned IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: latest
+    scripts:
+      - name: Unzip project and build without code signing
+        script: |
+          unzip -o "arc-raiders-guide-ios.zip"
+          cd "arc-raiders-guide-ios"
+          xcodebuild build \
+            -project "ARCRaidersGuide.xcodeproj" \
+            -scheme "ARCRaidersGuide" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+      - name: Package unsigned IPA
+        script: |
+          APP_PATH=$(find "$CM_BUILD_DIR/DerivedData/Build/Products/Release-iphoneos" -maxdepth 1 -name "*.app" | head -1)
+          echo "Packaging: $APP_PATH"
+          mkdir -p "$CM_BUILD_DIR/Payload"
+          cp -R "$APP_PATH" "$CM_BUILD_DIR/Payload/"
+          cd "$CM_BUILD_DIR"
+          zip -r "ARCRaidersGuide-unsigned.ipa" Payload
+    artifacts:
+      - "*.ipa"
+    publishing:
+      email:
+        notify:
+          success: false
+          failure: false
