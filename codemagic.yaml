@@ -33,8 +33,3 @@ workflows:
           zip -r "ARCRaidersGuide-unsigned.ipa" Payload
     artifacts:
       - "*.ipa"
-    publishing:
-      email:
-        notify:
-          success: false
-          failure: false
